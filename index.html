@@ -1,49 +1,159 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
 
-    <script type="text/javascript"
-            src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js">
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js">
     </script>
 
 
-    <script type="text/javascript">
+    <script>
+        var setCaretToPos = function (input, selectionStart, selectionEnd) {
+            if (input.setSelectionRange) {
+                input.focus();
+                input.setSelectionRange(selectionStart, selectionEnd);
+
+            } else if (input.createTextRange) {
+                var range = input.createTextRange();
+                range.collapse(false);
+                range.moveEnd('character', selectionEnd);
+                range.moveStart('character', selectionStart);
+                range.select();
+            }
+        };
 
         $(document).ready(function () {
-
-            var maxLength = 25;
+            var $textarea = $("#check");
             var maxRows = 8;
+            var maxCols = 25;
+            var iup = 0;
 
-            function correctText(baseString) {
-                baseString = baseString.replace(/\n/gi, "")
-                var inputLength = baseString.length;
-                var currentRow = Math.floor(inputLength / maxLength);
-                var str = "";
-                if (currentRow > 8) {
-                    currentRow = 8
+            $textarea.on('paste', function (e) {
+
+                var elText = $textarea.val();
+                var inputText = e.originalEvent.clipboardData.getData('text');
+                var cursorPosition = $(this).prop("selectionStart");
+                var splitedText = elText.split("\n");
+                var cursorRow = (Math.floor(cursorPosition / maxCols));
+                var splitedInputText = inputText.split("\n");
+                var positionCursorOnRow = maxCols - (((cursorRow + 1) * maxCols) - cursorPosition) - (
+                    cursorRow - 1);
+                splitedText[cursorRow] = splitedText[cursorRow].substr(0, positionCursorOnRow) +
+                    splitedInputText[0] + splitedText[cursorRow].substr(positionCursorOnRow,
+                        splitedText[cursorRow].length);
+
+
+
+                var moveText = "";
+                var trigger = false;
+                for (var i = 0; i < splitedText.length; i += 1) {
+                    if (typeof splitedText[i] !== 'string') splitedText[i] = "";
+
+                    if (moveText.length > 0 && trigger) {
+                        splitedText[i] = moveText + splitedText[i];
+                        moveText = "";
+                    };
+
+                    if (splitedText[i].length >= maxCols) {
+                        moveText = splitedText[i].substr(maxCols, splitedText[i].length);
+                        splitedText[i] = splitedText[i].substr(0, maxCols);
+                        trigger = true;
+                    } else {
+                        break;
+                    }
+
+                    if (i == maxRows && splitedText[i].length > maxCols) {
+                        splitedText[i].substr(maxCols, splitedText[i].length);
+                    }
                 }
-                for (var i = 0; i < currentRow; i++) {
-                    str += baseString.substr(i * maxLength, maxLength) + "\n";
-                }
-                ;
 
-                if (currentRow != maxRows) {
-                    var symbolLeft = inputLength - currentRow * maxLength;
-                    str += baseString.substr(currentRow * maxLength, symbolLeft);
-                }
-                return str;
-            }
+                text = splitedText.join("\n");
+                $(this).val(text);
+                setCaretToPos($textarea.get(0), cursorPosition, cursorPosition);
 
 
-            $('#check').on('input', function () {
-                var inputSymbol = $('#check').val();
-                var correctedString = correctText(inputSymbol)
-                $('#check').val(correctedString);
+                e.preventDefault();
 
             });
 
+            $textarea.on('input', function (e) {
 
+
+                var text = $(this).val();
+                var splitedText = text.split("\n");
+                if (splitedText.length > maxRows) {
+                    splitedText.splice(maxRows, splitedText.length);
+                    text = splitedText.join("\n");
+                    $(this).val(text);
+                    setCaretToPos($textarea.get(0), maxRows * maxCols, maxRows * maxCols);
+                }
+
+                var currentRow = splitedText.length;
+
+                var cursorPosition = $(this).prop("selectionStart");
+                var cursorRow = (Math.floor(cursorPosition / maxCols));
+                var textRows = Math.floor(splitedText.join("").length / maxCols)
+                var positionCursorOnRow = maxCols - (((cursorRow + 1) * maxCols) - cursorPosition) - (
+                    cursorRow - 1);
+
+
+
+                if (positionCursorOnRow == 0 && textRows == cursorRow) {
+                    text += "\n";
+                    $(this).val(text);
+                    return false
+                }
+
+
+                if (textRows * maxCols > cursorPosition || textRows * maxCols < cursorPosition) {
+                    var moveText = "";
+                    var trigger = false;
+                    for (var i = 0; i < maxRows; i += 1) {
+                        if (typeof splitedText[i] !== 'string') splitedText[i] = "";
+
+                        if (moveText.length > 0 && trigger) {
+                            splitedText[i] = moveText + splitedText[i];
+                            moveText = "";
+                        };
+
+                        if (splitedText[i].length >= maxCols) {
+                            moveText = splitedText[i].substr(maxCols, splitedText[i].length);
+                            splitedText[i] = splitedText[i].substr(0, maxCols);
+                            trigger = true;
+                        } else {
+                            break;
+                        }
+
+                        if (i == maxRows && splitedText[i].length > maxCols) {
+                            splitedText[i].substr(maxCols, splitedText[i].length);
+                        }
+                    };
+
+
+
+                    if (splitedText.length >= maxRows) {
+                      splitedText[maxRows-1].length = maxCols;
+                        splitedText.splice(maxRows, splitedText.length);
+                        text = splitedText.join("\n");
+                        $(this).val(text);
+                        if (cursorPosition > (maxRows * maxCols)) {
+                            setCaretToPos($textarea.get(0), (maxRows * maxCols)+maxRows, (maxRows * maxCols)+maxRows);
+                        }else{
+                            setCaretToPos($textarea.get(0), cursorPosition, cursorPosition);
+                        }
+                        return false
+                    }
+
+                    text = splitedText.join("\n");
+                    $(this).val(text);
+                    setCaretToPos($textarea.get(0), cursorPosition, cursorPosition);
+
+                    return false
+                }
+
+
+            });
         });
     </script>
 
@@ -54,8 +164,9 @@
 
 <body>
 
-<label for="check">Test task for text area:</label><br>
-<textarea id="check" rows="12" cols="30"></textarea>
+    <label for="check">Test task for text area:</label><br>
+    <textarea id="check" rows="10" cols="50"></textarea>
 
 </body>
+
 </html>
