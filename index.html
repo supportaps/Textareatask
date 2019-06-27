@@ -25,8 +25,8 @@
 
         $(document).ready(function () {
             var $textarea = $("#check");
-            var maxRows = 8;
-            var maxCols = 25;
+            var maxRows = 8 //$textarea.attr("rows");
+            var maxCols = 25 //$textarea.attr("cols");
             var iup = 0;
 
             $textarea.on('paste', function (e) {
@@ -74,7 +74,7 @@
 
 
                 e.preventDefault();
-
+                //splitedText.splice(cursorRow, 0, splitedInputText); splitedText[cursorRow]
             });
 
             $textarea.on('input', function (e) {
@@ -109,7 +109,7 @@
                 if (textRows * maxCols > cursorPosition || textRows * maxCols < cursorPosition) {
                     var moveText = "";
                     var trigger = false;
-                    for (var i = 0; i < maxRows; i += 1) {
+                    for (var i = 0; i < splitedText.length; i += 1) {
                         if (typeof splitedText[i] !== 'string') splitedText[i] = "";
 
                         if (moveText.length > 0 && trigger) {
@@ -122,7 +122,7 @@
                             splitedText[i] = splitedText[i].substr(0, maxCols);
                             trigger = true;
                         } else {
-                            break;
+                            continue;
                         }
 
                         if (i == maxRows && splitedText[i].length > maxCols) {
@@ -130,25 +130,13 @@
                         }
                     };
 
+     
 
-
-                    if (splitedText.length >= maxRows) {
-                      splitedText[maxRows-1].length = maxCols;
-                        splitedText.splice(maxRows, splitedText.length);
-                        text = splitedText.join("\n");
-                        $(this).val(text);
-                        if (cursorPosition > (maxRows * maxCols)) {
-                            setCaretToPos($textarea.get(0), (maxRows * maxCols)+maxRows, (maxRows * maxCols)+maxRows);
-                        }else{
-                            setCaretToPos($textarea.get(0), cursorPosition, cursorPosition);
-                        }
-                        return false
-                    }
-
+       
                     text = splitedText.join("\n");
                     $(this).val(text);
                     setCaretToPos($textarea.get(0), cursorPosition, cursorPosition);
-
+                    
                     return false
                 }
 
